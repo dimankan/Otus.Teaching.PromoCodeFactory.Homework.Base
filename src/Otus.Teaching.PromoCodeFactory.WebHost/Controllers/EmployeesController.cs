@@ -111,6 +111,10 @@ namespace Otus.Teaching.PromoCodeFactory.WebHost.Controllers
         [HttpPut("{employeeId:guid}")]
         public async Task<IActionResult> UpdateAsync(Guid employeeId, UpdateEmployeeRequest request)
         {
+            bool isExistEmployee = await _employeeRepository.IsExistByIdAsync(employeeId);
+            if (!isExistEmployee)
+                return BadRequest($"Пользователя с идентификатором {employeeId} не существует");
+
             if (request.RoleNames.Count == 0)
                 return BadRequest("Роль не указана");
 
@@ -139,6 +143,10 @@ namespace Otus.Teaching.PromoCodeFactory.WebHost.Controllers
         [HttpDelete("{employeeId:guid}")]
         public async Task<IActionResult> DeleteAsync(Guid employeeId)
         {
+            bool isExistEmployee = await _employeeRepository.IsExistByIdAsync(employeeId);
+            if (!isExistEmployee)
+                return BadRequest($"Пользователя с идентификатором {employeeId} не существует");
+
             string resultDelete = await _employeeRepository.DeleteAsync(employeeId);
 
             return Ok(resultDelete) ;

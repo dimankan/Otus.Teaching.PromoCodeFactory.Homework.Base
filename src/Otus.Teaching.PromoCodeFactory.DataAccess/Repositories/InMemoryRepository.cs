@@ -64,5 +64,12 @@ namespace Otus.Teaching.PromoCodeFactory.DataAccess.Repositories
 
             return await Task.FromResult(Data[employeeId]);
         }
+
+        public async Task<bool> IsExistByIdAsync(Guid id)
+        {
+            bool isExist = Data.ContainsKey(id);
+
+            return await Task.FromResult<bool>(isExist);
+        }
     }
 }

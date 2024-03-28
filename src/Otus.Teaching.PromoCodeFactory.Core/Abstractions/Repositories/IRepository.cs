@@ -16,5 +16,7 @@ namespace Otus.Teaching.PromoCodeFactory.Core.Abstractions.Repositories
         Task<string> DeleteAsync(Guid id);
         Task<T> AddAsync(T value);
         Task<T> UpdateAsync(Guid employeeId, T value);
+
+        Task<bool> IsExistByIdAsync(Guid id);
     }
 }
