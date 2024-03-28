@@ -18,12 +18,14 @@ namespace Otus.Teaching.PromoCodeFactory.WebHost.Controllers
         : ControllerBase
     {
         private readonly IRepository<Employee> _employeeRepository;
+        private readonly IRepository<Role> _roleRepository;
 
-        public EmployeesController(IRepository<Employee> employeeRepository)
+        public EmployeesController(IRepository<Employee> employeeRepository, IRepository<Role> roleRepository)
         {
             _employeeRepository = employeeRepository;
+            _roleRepository = roleRepository;
         }
-        
+
         /// <summary>
         /// Получить данные всех сотрудников
         /// </summary>
@@ -70,6 +72,84 @@ namespace Otus.Teaching.PromoCodeFactory.WebHost.Controllers
             };
 
             return employeeModel;
+        }
+
+        /// <summary>
+        /// Создать данные сотрудника
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> CreateAsync(CreateEmployeeRequest request)
+        {
+            if(request.RoleNames.Count == 0)
+                return BadRequest("Роль не указана");
+
+            var allRoles = await _roleRepository.GetAllAsync();
+            var employeeRoles = allRoles.Where(x=>request.RoleNames.Contains(x.Name)).ToList();
+
+            if (employeeRoles.Count == 0)
+                return BadRequest($"Нет доступных ролей. Выберите из списка: {string.Join(", ",allRoles.Select(x=>x.Name).Distinct())}") ;
+
+            var employee = Employee.Create(request.FirstName, request.LastName, request.Email, employeeRoles);
+            if (employee.IsFailure)
+            {
+                return BadRequest(employee.Error);
+            }
+
+            var saveEmployee = await _employeeRepository.AddAsync(employee.Value);
+
+            return Ok(saveEmployee);
+        }
+
+        /// <summary>
+        /// Обновить данные сотрудника
+        /// </summary>
+        /// <param name="employeeId"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [HttpPut("{employeeId:guid}")]
+        public async Task<IActionResult> UpdateAsync(Guid employeeId, UpdateEmployeeRequest request)
+        {
+            bool isExistEmployee = await _employeeRepository.IsExistByIdAsync(employeeId);
+            if (!isExistEmployee)
+                return BadRequest($"Пользователя с идентификатором {employeeId} не существует");
+
+            if (request.RoleNames.Count == 0)
+                return BadRequest("Роль не указана");
+
+            var allRoles = await _roleRepository.GetAllAsync();
+            var employeeRoles = allRoles.Where(x => request.RoleNames.Contains(x.Name)).ToList();
+
+            if (employeeRoles.Count == 0)
+                return BadRequest($"Нет доступных ролей. Выберите из списка: {string.Join(", ", allRoles.Select(x => x.Name).Distinct())}");
+
+            var employee = Employee.Create(request.FirstName, request.LastName, request.Email, employeeRoles);
+            if (employee.IsFailure)
+            {
+                return BadRequest(employee.Error);
+            }
+
+            var updateEmployee = await _employeeRepository.UpdateAsync(employeeId, employee.Value);
+
+            return Ok(updateEmployee);
+        }
+
+        /// <summary>
+        /// Удалить сотрудника по Id
+        /// </summary>
+        /// <param name="employeeId"></param>
+        /// <returns></returns>
+        [HttpDelete("{employeeId:guid}")]
+        public async Task<IActionResult> DeleteAsync(Guid employeeId)
+        {
+            bool isExistEmployee = await _employeeRepository.IsExistByIdAsync(employeeId);
+            if (!isExistEmployee)
+                return BadRequest($"Пользователя с идентификатором {employeeId} не существует");
+
+            string resultDelete = await _employeeRepository.DeleteAsync(employeeId);
+
+            return Ok(resultDelete) ;
         }
     }
 }
